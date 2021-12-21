@@ -1,6 +1,5 @@
-
-var Test = require('../config/testConfig.js');
-//var BigNumber = require('bignumber.js');
+const Test = require('../config/testConfig.js');
+const truffleAssert = require('truffle-assertions');
 
 contract('Oracles', async (accounts) => {
 
@@ -29,6 +28,7 @@ contract('Oracles', async (accounts) => {
     for(let a=1; a<TEST_ORACLES_COUNT; a++) {      
       await config.flightSuretyApp.registerOracle({ from: accounts[a], value: fee });
       let result = await config.flightSuretyApp.getMyIndexes.call({from: accounts[a]});
+      assert.notEqual(result, null);
       console.log(`Oracle Registered: ${result[0]}, ${result[1]}, ${result[2]}`);
     }
   });
@@ -40,9 +40,10 @@ contract('Oracles', async (accounts) => {
     let timestamp = Math.floor(Date.now() / 1000);
 
     // Submit a request for oracles to get status information for a flight
-    await config.flightSuretyApp.fetchFlightStatus(config.firstAirline, flight, timestamp);
+    const tx = await config.flightSuretyApp.fetchFlightStatus(config.firstAirline, flight, timestamp);
     // ACT
 
+    truffleAssert.eventEmitted(tx, 'OracleRequest')
     // Since the Index assigned to each test account is opaque by design
     // loop through all the accounts and for each account, all its Indexes (indices?)
     // and submit a response. The contract will reject a submission if it was
