@@ -39,7 +39,6 @@ To build dapp for prod:
 
 Deploy the contents of the ./dapp folder
 
-
 ## Resources
 
 * [How does Ethereum work anyway?](https://medium.com/@preethikasireddy/how-does-ethereum-work-anyway-22d1df506369)
@@ -50,3 +49,12 @@ Deploy the contents of the ./dapp folder
 * [Solidity Language Reference](http://solidity.readthedocs.io/en/v0.4.24/)
 * [Ethereum Blockchain Explorer](https://etherscan.io/)
 * [Web3Js Reference](https://github.com/ethereum/wiki/wiki/JavaScript-API)
+
+## Development
+
+0. npm install
+1. truffle compile
+2. ganache-cli --port=8545 -a 20
+3. truffle migrate
+4. npm run dapp
+5. npm run server
