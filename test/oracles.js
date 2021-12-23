@@ -3,7 +3,7 @@ const truffleAssert = require('truffle-assertions');
 
 contract('Oracles', async (accounts) => {
 
-  const TEST_ORACLES_COUNT = 20;
+  const TEST_ORACLES_COUNT = 5;
   var config;
   before('setup contract', async () => {
     config = await Test.Config(accounts);
@@ -25,7 +25,7 @@ contract('Oracles', async (accounts) => {
     let fee = await config.flightSuretyApp.REGISTRATION_FEE.call();
 
     // ACT
-    for(let a=1; a<TEST_ORACLES_COUNT; a++) {      
+    for(let a=1; a<TEST_ORACLES_COUNT; a++) {   
       await config.flightSuretyApp.registerOracle({ from: accounts[a], value: fee });
       let result = await config.flightSuretyApp.getMyIndexes.call({from: accounts[a]});
       assert.notEqual(result, null);
