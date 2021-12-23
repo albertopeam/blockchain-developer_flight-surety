@@ -54,7 +54,8 @@ Deploy the contents of the ./dapp folder
 
 0. npm install
 1. truffle compile
-2. ganache-cli --port=8545 -a 20
-3. truffle migrate
-4. npm run dapp
-5. npm run server
+2. metamask connected to localhost 8545
+3. ganache-cli --port=8545 -a 20
+4. truffle migrate
+5. npm run dapp
+6. npm run server
