@@ -52,10 +52,15 @@ Deploy the contents of the ./dapp folder
 
 ## Development
 
-0. npm install
-1. truffle compile
-2. metamask connected to localhost 8545
-3. ganache-cli --port=8545 -a 20
-4. truffle migrate
-5. npm run dapp
-6. npm run server
+1. npm install
+2. truffle compile
+3. metamask connected to localhost 8545
+4. ganache-cli --port=8545 -a 20 --defaultBalanceEther 10000
+5. truffle migrate
+6. npm run dapp
+7. npm run server
+
+## Website
+
+1. deploying contracts
+   1. needed 10 eth for deployer/account[0] to be the first airline. check `deploy_contracts` script if needed. It will be printed in cli the address of the account

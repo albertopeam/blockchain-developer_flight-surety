@@ -36,11 +36,13 @@ contract FlightSuretyData {
     * @dev Constructor
     *      The deploying account becomes contractOwner
     */
-    constructor() {
+    constructor() payable {
+        require(msg.value >= 10 ether, "FlightSuretyData deployer becomes an airline and it needs 10 eth to be funded");
         contractOwner = msg.sender;        
         numAirlines = 0;
-        authorizedContracts[msg.sender] = 1;
+        authorizedContracts[msg.sender] = 1;        
         airlines[msg.sender] = Airline({isRegistered: true, isFunded: true, name: "Deployer airline"});
+        payable(this).transfer(msg.value);
     }
 
     /********************************************************************************************/

@@ -16,6 +16,11 @@ contract('Flight Surety Tests', async (accounts) => {
     await config.flightSuretyData.authorizeCaller(config.flightSuretyApp.address);
   });
 
+  it(`(deploy) transfers 10 eth from deployer to data contract`, async function(){
+    let balance = await web3.eth.getBalance(config.flightSuretyData.address);
+    assert.equal(balance, fundAmount);
+  })  
+
   /****************************************************************************************/
   /* Operations and Settings                                                              */
   /****************************************************************************************/
