@@ -3,7 +3,7 @@ const truffleAssert = require('truffle-assertions');
 
 contract('Oracles', async (accounts) => {
 
-  const TEST_ORACLES_COUNT = 5;
+  const TEST_ORACLES_COUNT = 6;
   var config;
   before('setup contract', async () => {
     config = await Test.Config(accounts);

@@ -6,6 +6,7 @@ pragma solidity ^0.8.10;
 // More info: https://www.nccgroup.trust/us/about-us/newsroom-and-events/blog/2018/november/smart-contract-insecurity-bad-arithmetic/
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "./FlightSuretyData.sol";
 
 /************************************************** */
 /* FlightSurety Smart Contract                      */
@@ -26,6 +27,7 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
     address private contractOwner;          // Account used to deploy contract
+    FlightSuretyData private contractData;
 
     struct Flight {
         bool isRegistered;
@@ -48,19 +50,26 @@ contract FlightSuretyApp {
     *      This is used on all state changing functions to pause the contract in 
     *      the event there is an issue that needs to be fixed
     */
-    modifier requireIsOperational() 
-    {
-         // Modify to call data contract's status
-        require(true, "Contract is currently not operational");  
-        _;  // All modifiers require an "_" which indicates where the function body will be added
+    modifier requireIsOperational() {
+        require(contractData.isOperational(), "Contract is currently not operational");  
+        _;
     }
 
     /**
     * @dev Modifier that requires the "ContractOwner" account to be the function caller
     */
-    modifier requireContractOwner()
-    {
+    modifier requireContractOwner(){
         require(msg.sender == contractOwner, "Caller is not contract owner");
+        _;
+    }
+
+    modifier requireIsAirline() {
+        require(contractData.isAirline(msg.sender), "Caller is not a registered airline");
+        _;
+    }
+
+    modifier requireAirlineFundEther() {
+        require(msg.value >= 10 ether, "Not enough ether to fund an airline(>=10 eth needed)");
         _;
     }
 
@@ -72,20 +81,18 @@ contract FlightSuretyApp {
     * @dev Contract constructor
     *
     */
-    constructor () {
+    constructor (address _contractDataAddress) {
         contractOwner = msg.sender;
+        address payable contractAddress = payable(_contractDataAddress);
+        contractData = FlightSuretyData(contractAddress);
     }
 
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
 
-    function isOperational() 
-                            public 
-                            pure 
-                            returns(bool) 
-    {
-        return true;  // Modify to call data contract's status
+    function isOperational() public view returns(bool) {
+        return contractData.isOperational();
     }
 
     /********************************************************************************************/
@@ -97,16 +104,12 @@ contract FlightSuretyApp {
     * @dev Add an airline to the registration queue
     *
     */   
-    function registerAirline
-                            (   
-                            )
-                            external
-                            pure
-                            returns(bool success, uint256 votes)
-    {
-        return (success, 0);
+    function registerAirline(address _address, string memory _name) external 
+        requireIsAirline returns(bool success, uint256 votes) {         
+            //TODO: logic -> consensus registering   
+        bool result = contractData.registerAirline(_address, _name);
+        return (result, 0);
     }
-
 
    /**
     * @dev Register a future flight for insuring.
@@ -157,6 +160,12 @@ contract FlightSuretyApp {
 
         emit OracleRequest(index, airline, flight, timestamp);
     } 
+
+    // fund airline
+    function fundAirline() external payable     
+        requireAirlineFundEther {        
+        contractData.fund{value: msg.value}(msg.sender);
+    }
 
 
 // region ORACLE MANAGEMENT
