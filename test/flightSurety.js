@@ -19,7 +19,7 @@ contract('Flight Surety Tests', async (accounts) => {
   it(`(deploy) transfers 10 eth from deployer to data contract`, async function(){
     let balance = await web3.eth.getBalance(config.flightSuretyData.address);
     assert.equal(balance, fundAmount);
-  })  
+  }); 
 
   /****************************************************************************************/
   /* Operations and Settings                                                              */
@@ -86,8 +86,10 @@ contract('Flight Surety Tests', async (accounts) => {
     let defaultAirline = config.owner;
 
     let result = await config.flightSuretyData.isAirline.call(defaultAirline); 
+    let numAirlines = await config.flightSuretyData.registeredNumberOfAirlines.call(); 
 
     assert.equal(result, true);
+    assert.equal(numAirlines, 1);
   })
 
   it('(airline) cannot register an Airline using registerAirline() if it is not funded', async () => {
@@ -112,6 +114,8 @@ contract('Flight Surety Tests', async (accounts) => {
     assert.equal(airline.name, airlineName);
     assert.equal(airline.addr, newAirline);
     assert.equal(airline.isFunded, false);
+    let numAirlines = await config.flightSuretyData.registeredNumberOfAirlines.call(); 
+    assert.equal(numAirlines, 2);    
   });
 
   it('(airline) registered airline that is funded with less than 10eth not becomes participated airline', async () => {

@@ -36,7 +36,6 @@ contract FlightSuretyApp {
         address airline;
     }
     mapping(bytes32 => Flight) private flights;
-
  
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -106,8 +105,12 @@ contract FlightSuretyApp {
     */   
     function registerAirline(address _address, string memory _name) external 
         requireIsAirline returns(bool success, uint256 votes) {         
-            //TODO: logic -> consensus registering   
-        bool result = contractData.registerAirline(_address, _name);
+        bool result;
+        if (contractData.registeredNumberOfAirlines() < 4) {
+            result = contractData.registerAirline(_address, _name);
+        } else {
+            //TODO: how to approach it? through vote system -> functions            
+        }
         return (result, 0);
     }
 

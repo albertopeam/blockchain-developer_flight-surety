@@ -21,8 +21,8 @@ contract FlightSuretyData {
         bool isFunded;
         string name;
     }
-    mapping(address => Airline) private airlines;
-    uint256 private numAirlines;
+    mapping(address => Airline) private airlines;  
+    uint256 private numAirlines;  
 
     // funds
     mapping(address => uint256) private funds;
@@ -39,9 +39,10 @@ contract FlightSuretyData {
     constructor() payable {
         require(msg.value >= 10 ether, "FlightSuretyData deployer becomes an airline and it needs 10 eth to be funded");
         contractOwner = msg.sender;        
-        numAirlines = 0;
         authorizedContracts[msg.sender] = 1;        
+        funds[msg.sender] = funds[msg.sender].add(msg.value);    
         airlines[msg.sender] = Airline({isRegistered: true, isFunded: true, name: "Deployer airline"});
+        numAirlines = numAirlines.add(1); 
         payable(this).transfer(msg.value);
     }
 
@@ -100,12 +101,19 @@ contract FlightSuretyData {
         return operational;
     }
 
-    function isAirline(address _address) external view returns(bool) {
+    function isAirline(address _address) 
+        requireIsCallerAuthorized external view returns(bool) {
         return airlines[_address].isRegistered && airlines[_address].isFunded;
     }
 
-    function getAirline(address _address) external view returns(bool isRegistered, string memory name, address addr, bool isFunded) {
+    function getAirline(address _address) 
+        requireIsCallerAuthorized external view returns(bool isRegistered, string memory name, address addr, bool isFunded) {
         return (airlines[_address].isRegistered, airlines[_address].name, _address, airlines[_address].isFunded);
+    }
+
+    function registeredNumberOfAirlines() 
+        requireIsCallerAuthorized external view returns(uint256) {
+        return numAirlines;
     }
 
     /**
@@ -145,17 +153,9 @@ contract FlightSuretyData {
         requireIsOperational 
         requireIsCallerAuthorized
         requireIsNotRegisteredAirline(_address) returns (bool) {             
-        bool registered = false;
-        //TODO: logic here???? move to the other contract. how to do that having to store airlines?
-        if (numAirlines < 5) {
-            airlines[_address] = Airline({isRegistered: true, isFunded: false, name: _name});
-            registered = true;
-        } else {
-            //TODO: how to approach it? through vote system -> functions
-            registered = false;
-        }
-        numAirlines = numAirlines + 1;
-        return registered;
+        airlines[_address] = Airline({isRegistered: true, isFunded: false, name: _name});
+        numAirlines = numAirlines.add(1); 
+        return true;
     }
 
    /**
