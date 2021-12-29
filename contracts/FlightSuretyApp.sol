@@ -14,6 +14,8 @@ import "./FlightSuretyData.sol";
 contract FlightSuretyApp {
     using SafeMath for uint256; // Allow SafeMath functions to be called for all uint256 types (similar to "prototype" in Javascript)
 
+    event RegisteredAirline(address airlineAddress, string airlineName);
+
     /********************************************************************************************/
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
@@ -28,6 +30,7 @@ contract FlightSuretyApp {
 
     address private contractOwner;          // Account used to deploy contract
     FlightSuretyData private contractData;
+    uint8 private requireAtLeastHalfOfTheVotes = 2;
 
     struct Flight {
         bool isRegistered;
@@ -104,14 +107,18 @@ contract FlightSuretyApp {
     *
     */   
     function registerAirline(address _address, string memory _name) external 
-        requireIsAirline returns(bool success, uint256 votes) {         
-        bool result;
+        requireIsAirline returns(bool success, uint256 votes) {   
+        bool airlineIsRegistered = false;      
+        uint256 airlineVotes = 0;
         if (contractData.registeredNumberOfAirlines() < 4) {
-            result = contractData.registerAirline(_address, _name);
-        } else {
-            //TODO: how to approach it? through vote system -> functions            
+            (airlineIsRegistered, airlineVotes) = (contractData.registerAirline(_address, _name), 1);
+        } else {            
+            (airlineIsRegistered, airlineVotes) = contractData.enqueueAirline(_address, _name, msg.sender, requireAtLeastHalfOfTheVotes);
         }
-        return (result, 0);
+        if (airlineIsRegistered) {
+            emit RegisteredAirline(_address, _name);
+        }
+        return (airlineIsRegistered, airlineVotes);
     }
 
    /**

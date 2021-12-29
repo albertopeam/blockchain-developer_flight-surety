@@ -107,7 +107,10 @@ contract('Flight Surety Tests', async (accounts) => {
     let defaultAirline = config.owner;
     let newAirline = config.firstAirline;
 
-    await config.flightSuretyApp.registerAirline(newAirline, airlineName, {from: defaultAirline});
+    const transaction = await config.flightSuretyApp.registerAirline(newAirline, airlineName, {from: defaultAirline});
+    truffleAssert.eventEmitted(transaction, "RegisteredAirline", (event) => {
+      return event.airlineAddress === newAirline && event.airlineName === airlineName;
+    });
 
     let airline = await config.flightSuretyData.getAirline.call(newAirline); 
     assert.equal(airline.isRegistered, true);
@@ -145,5 +148,49 @@ contract('Flight Surety Tests', async (accounts) => {
     assert.equal(finalAirlineBalance, expectedFinalAirlineBalance)
     const expectedFundBalance = web3.utils.toBN(initialDataContractBalance).add(fundAmountBN).toString()
     assert.equal(finalDataContractBalance, expectedFundBalance)
+  });
+
+  it('(airline) when registering five airlines then last one is not an airline until at least 50% of registered ones register(or vote) it', async () => {
+    let defaultAirline = config.owner;
+    let thirdAirline = accounts[3];
+    let fourthAirline = accounts[4];
+    let fifthAirline = accounts[5];
+    await config.flightSuretyApp.registerAirline(thirdAirline, "third", {from: defaultAirline});
+    await config.flightSuretyApp.fundAirline({from: thirdAirline, value: fundAmount});
+    await config.flightSuretyApp.registerAirline(fourthAirline, "fourth", {from: defaultAirline});
+    await config.flightSuretyApp.fundAirline({from: fourthAirline, value: fundAmount});
+    assert.equal(await config.flightSuretyData.isAirline.call(thirdAirline), true);
+    assert.equal(await config.flightSuretyData.isAirline.call(fourthAirline), true);
+    assert.equal(await config.flightSuretyData.registeredNumberOfAirlines.call(), 4);
+
+    await config.flightSuretyApp.registerAirline(fifthAirline, "fifth", {from: defaultAirline});
+
+    var fifthAirlineQueued = await config.flightSuretyData.getEnqueuedAirline.call(fifthAirline);
+    assert.equal(fifthAirlineQueued.isEnqueued, true);
+    assert.equal(fifthAirlineQueued.name, "fifth");
+    assert.equal(fifthAirlineQueued.addr, fifthAirline);
+    assert.equal(fifthAirlineQueued.numVotesInFavour, 1);
+    assert.equal(fifthAirlineQueued.numAirlinesToVote, 4);
+    assert.equal(await config.flightSuretyData.isAirline.call(fifthAirline), false);
+    await truffleAssert.fails(
+      config.flightSuretyApp.registerAirline(fifthAirline, "fifth", {from: fifthAirline}),
+      "Caller is not a registered airline"
+    );
+    await truffleAssert.fails(
+      config.flightSuretyApp.registerAirline(fifthAirline, "fifth", {from: defaultAirline}),
+      "Vote address already voted to this airline"
+    );   
+    const transaction = await config.flightSuretyApp.registerAirline(fifthAirline, "fifth", {from: thirdAirline});    
+    truffleAssert.eventEmitted(transaction, "RegisteredAirline", (event) => {
+      return event.airlineAddress === fifthAirline && event.airlineName === "fifth";
+    });
+    assert.equal(await config.flightSuretyData.isAirline.call(fifthAirline), false);
+    let fifthAirlineData = await config.flightSuretyData.getAirline.call(fifthAirline);
+    assert.equal(fifthAirlineData.isRegistered, true);
+    assert.equal(fifthAirlineData.name, "fifth");
+    assert.equal(fifthAirlineData.isFunded, false);
+    assert.equal(fifthAirlineData.addr, fifthAirline);    
+    fifthAirlineQueued = await config.flightSuretyData.getEnqueuedAirline.call(fifthAirline);
+    assert.equal(fifthAirlineQueued.isEnqueued, false);
   });
 });

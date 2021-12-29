@@ -24,6 +24,18 @@ contract FlightSuretyData {
     mapping(address => Airline) private airlines;  
     uint256 private numAirlines;  
 
+    // enqueued airlines
+    struct EnqueuedAirline {
+        bool isEnqueued;
+        string name;
+        mapping(address => bool) votes;
+        // num airlines that voted yes
+        uint256 numVotesInFavour;
+        // num airlines when enqueued
+        uint256 numAirlines;
+    }
+    mapping(address => EnqueuedAirline) private enqueuedAirlines;  
+
     // funds
     mapping(address => uint256) private funds;
 
@@ -111,6 +123,11 @@ contract FlightSuretyData {
         return (airlines[_address].isRegistered, airlines[_address].name, _address, airlines[_address].isFunded);
     }
 
+    function getEnqueuedAirline(address _address) 
+        requireIsCallerAuthorized external view returns(bool isEnqueued, string memory name, address addr, uint256 numVotesInFavour, uint256 numAirlinesToVote) {
+        return (enqueuedAirlines[_address].isEnqueued, enqueuedAirlines[_address].name, _address, enqueuedAirlines[_address].numVotesInFavour, enqueuedAirlines[_address].numAirlines);
+    }
+
     function registeredNumberOfAirlines() 
         requireIsCallerAuthorized external view returns(uint256) {
         return numAirlines;
@@ -149,13 +166,43 @@ contract FlightSuretyData {
     *      Can only be called from FlightSuretyApp contract
     *
     */   
-    function registerAirline(address _address, string memory _name) external 
+    function registerAirline(address _address, string memory _name) external returns (bool) {             
+        return _registerAirline(_address, _name);
+    }
+
+    function enqueueAirline(address _address, string memory _name, address _voteAddress, uint8 times) external 
+        requireIsOperational 
+        requireIsCallerAuthorized
+        requireIsNotRegisteredAirline(_address) returns(bool success, uint256 votes) {
+        require(enqueuedAirlines[_address].votes[_voteAddress] == false, "Vote address already voted to this airline");
+        if (enqueuedAirlines[_address].isEnqueued == false) {
+            enqueuedAirlines[_address].isEnqueued = true;            
+            enqueuedAirlines[_address].name = _name;     
+            enqueuedAirlines[_address].numAirlines = numAirlines;       
+        }
+        if (_address != _voteAddress) {
+            enqueuedAirlines[_address].votes[_voteAddress] = true;
+            enqueuedAirlines[_address].numVotesInFavour = enqueuedAirlines[_address].numVotesInFavour.add(1);
+        }                              
+        bool registered = false;
+        if (enqueuedAirlines[_address].numVotesInFavour.mul(times) >= enqueuedAirlines[_address].numAirlines) {
+            registered = _registerAirline(_address, enqueuedAirlines[_address].name);
+            _removeEnqueuedAirline(_address);            
+        }        
+        return (registered, enqueuedAirlines[_address].numVotesInFavour);
+    }
+
+    function _registerAirline(address _address, string memory _name) internal 
         requireIsOperational 
         requireIsCallerAuthorized
         requireIsNotRegisteredAirline(_address) returns (bool) {             
         airlines[_address] = Airline({isRegistered: true, isFunded: false, name: _name});
         numAirlines = numAirlines.add(1); 
         return true;
+    }
+
+    function _removeEnqueuedAirline(address _address) internal {
+        delete enqueuedAirlines[_address];
     }
 
    /**
