@@ -53,14 +53,26 @@ Deploy the contents of the ./dapp folder
 ## Development
 
 1. npm install
-2. truffle compile
-3. metamask connected to localhost 8545
-4. ganache-cli --port=8545 -a 20 --defaultBalanceEther 10000
-5. truffle migrate
-6. npm run dapp
-7. npm run server
+2. metamask connected to localhost 8545
+3. ganache-cli --port=8545 --accounts 50 --defaultBalanceEther 10000
+   ganache-cli --port=8545 --accounts 50 --defaultBalanceEther 10000 -g 100000000000
+4. truffle console
+   1. compile
+   2. test
+   3. migrate
+5. npm run dapp
+6. npm run server
+
+## Info
+
+[ganache cli](https://docs.nethereum.com/en/latest/ethereum-and-clients/ganache-cli/)
 
 ## Website
 
-1. deploying contracts
+1. deploying contracts -> truffle migrate
    1. needed 10 eth for deployer/account[0] to be the first airline. check `deploy_contracts` script if needed. It will be printed in cli the address of the account
+   2. it will write to config.json:
+      1. url of node
+      2. addresses of the contracts and firstAirline
+2. starting the server -> npm run server
+   1. at startup will register 20 oracles, each one consuming 1ether to be registered.
