@@ -8,7 +8,10 @@ module.exports = async function(deployer, network, accounts) {
     console.log(`first airline address ${firstAirline}`);
     let fund = web3.utils.toWei('10', 'ether');
     await deployer.deploy(FlightSuretyData, {from: firstAirline, value: fund});
-    await deployer.deploy(FlightSuretyApp, FlightSuretyData.address, {from: firstAirline})
+    await deployer.deploy(FlightSuretyApp, FlightSuretyData.address, {from: firstAirline});
+    let flightSuretyData = await FlightSuretyData.deployed();
+    console.log(`authorizing FlightSuretyApp to access FlightSuretyData`);
+    await flightSuretyData.authorizeCaller(FlightSuretyApp.address);
     let config = {
         localhost: {
             url: 'http://localhost:8545',

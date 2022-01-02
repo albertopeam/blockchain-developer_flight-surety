@@ -9,6 +9,34 @@ let provider = config.url.replace('http', 'ws');
 let web3 = new Web3(new Web3.providers.WebsocketProvider(provider));
 let flightSuretyApp = new web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
 let oracles = new Oracles(flightSuretyApp, web3);
+let flights = [
+  {        
+    id: `fid_0`,
+    description: `MAD-JFK`,
+    departure: `11:50 01/01/2022`
+  },
+  {        
+    id: `fid_1`,
+    description: `MAD-LAX`,
+    departure: `00:00 03/01/2022`
+  },
+  {        
+    id: `fid_2`,
+    description: `MAD-MIA`,
+    departure: `13:30 04/01/2022`
+  },
+  {        
+    id: `fid_3`,
+    description: `MAD-AUS`,
+    departure: `17:40 05/01/2022`
+  },
+  {        
+    id: `fid_4`,
+    description: `MAD-LAS`,
+    departure: `13:03 06/01/2022`
+  }
+]
+let airline;
 
 flightSuretyApp.events.OracleRequest({fromBlock: 'latest' }, function (error, event) {
     if (error) { 
@@ -25,23 +53,24 @@ flightSuretyApp.events.OracleRequest({fromBlock: 'latest' }, function (error, ev
 });
 
 const app = express();
-app.get('/api', (req, res) => {
-    res.send({
-      message: 'An API for use with your Dapp!'
-    })
+app.get('/api/flights', (req, res) => {
+  if (airline == null) {
+    res.send([]);
+  } else {
+    let results = flights.map(element => Object.assign({}, element, {airline: airline}));
+    res.send(results);
+  }  
 });
 
 (async() => {
   const accounts = await web3.eth.getAccounts();
   web3.eth.defaultAccount = accounts[0];
   console.log(`default account ${web3.eth.defaultAccount}`);
+  console.log(`airline address ${config.firstAirline}`);
+  let firstAirline = await flightSuretyApp.methods.getAirline(config.firstAirline).call({from: web3.eth.defaultAccount})
+  airline = { name: firstAirline.airlineName, address: firstAirline.airlineAddress };
   await oracles.registerOracles();
-  await fetch(); //TODO: remove
 })();
-
-async function fetch() {
-  await flightSuretyApp.methods.fetchFlightStatus(config.firstAirline, "flight4", Date.now()).send({from: web3.eth.defaultAccount});
-}
 
 export default app;
 

@@ -65,8 +65,8 @@ contract FlightSuretyApp {
         _;
     }
 
-    modifier requireIsAirline() {
-        require(contractData.isAirline(msg.sender), "Caller is not a registered airline");
+    modifier requireIsAirline(address _address) {
+        require(contractData.isAirline(_address), "Caller is not a registered airline");
         _;
     }
 
@@ -107,7 +107,7 @@ contract FlightSuretyApp {
     *
     */   
     function registerAirline(address _address, string memory _name) external 
-        requireIsAirline returns(bool success, uint256 votes) {   
+        requireIsAirline(msg.sender) returns(bool success, uint256 votes) {   
         bool airlineIsRegistered = false;      
         uint256 airlineVotes = 0;
         if (contractData.registeredNumberOfAirlines() < 4) {
@@ -119,6 +119,12 @@ contract FlightSuretyApp {
             emit RegisteredAirline(_address, _name);
         }
         return (airlineIsRegistered, airlineVotes);
+    }
+
+    function getAirline(address _address) view external 
+        requireIsAirline(_address)
+        returns(string memory airlineName, address airlineAddress) {
+        (, airlineName, airlineAddress,) = contractData.getAirline(_address);
     }
 
    /**
