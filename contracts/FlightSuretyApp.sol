@@ -31,14 +31,6 @@ contract FlightSuretyApp {
     address private contractOwner;          // Account used to deploy contract
     FlightSuretyData private contractData;
     uint8 private requireAtLeastHalfOfTheVotes = 2;
-
-    struct Flight {
-        bool isRegistered;
-        uint8 statusCode;
-        uint256 updatedTimestamp;        
-        address airline;
-    }
-    mapping(bytes32 => Flight) private flights;
  
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -129,12 +121,18 @@ contract FlightSuretyApp {
     }
 
    /**
-    * @dev Register a future flight for insuring.
+    * Register a future flight for insuring.
     *
     */  
-    function registerFlight() external
+    function registerFlight(string memory flightId, uint256 timeStamp) external
         requireIsOperational {
-        
+        contractData.registerFlight(flightId, timeStamp, msg.sender);
+    }
+
+    // get flights
+    function getFlights() view external
+        requireIsOperational returns (string[] memory) {
+        return contractData.getFlights();
     }
     
    /**

@@ -36,6 +36,17 @@ contract FlightSuretyData {
     }
     mapping(address => EnqueuedAirline) private enqueuedAirlines;  
 
+    // flights
+    struct Flight {
+        bool isRegistered;
+        uint8 statusCode;
+        uint256 updatedTimestamp;        
+        address airline;
+    }
+    mapping(string => Flight) private flights;
+    string[] private flightIds;
+
+
     // funds
     mapping(address => uint256) private funds;
 
@@ -95,6 +106,16 @@ contract FlightSuretyData {
 
     modifier requireIsRegisteredAirline(address _address) {
         require(airlines[_address].isRegistered == true, "Airline is not registered");
+        _;
+    }
+
+    modifier requireIsAirline(address _address) {
+        require(airlines[_address].isRegistered == true && airlines[_address].isFunded == true, "Address is not an airline");
+        _;
+    }
+
+    modifier requireFlightNotRegistered(string memory flightId) {
+        require(flights[flightId].isRegistered == false, "Flight is already registered");
         _;
     }
 
@@ -201,6 +222,26 @@ contract FlightSuretyData {
 
     function _removeEnqueuedAirline(address _address) internal {
         delete enqueuedAirlines[_address];
+    }
+
+    // regiter flight
+    function registerFlight(string memory flightId, uint256 timeStamp, address airlineAddress) external
+        requireIsOperational 
+        requireIsCallerAuthorized 
+        requireIsAirline(airlineAddress)
+        requireFlightNotRegistered(flightId) {
+        flights[flightId].airline = airlineAddress;
+        flights[flightId].updatedTimestamp = timeStamp;
+        flights[flightId].statusCode = 0;
+        flights[flightId].isRegistered = true;
+        flightIds.push(flightId);
+    }
+
+    // get flights
+    function getFlights() view external
+        requireIsOperational 
+        requireIsCallerAuthorized returns (string[] memory) {
+        return flightIds;
     }
 
    /**

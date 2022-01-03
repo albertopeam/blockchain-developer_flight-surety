@@ -193,4 +193,13 @@ contract('Flight Surety Tests', async (accounts) => {
     fifthAirlineQueued = await config.flightSuretyData.getEnqueuedAirline.call(fifthAirline);
     assert.equal(fifthAirlineQueued.isEnqueued, false);
   });
+
+  it('(airline) when registering flight then it can be retrieved', async () => {
+    let flightId = "flight";
+
+    await config.flightSuretyApp.registerFlight(flightId, new Date().getTime(), {from: config.firstAirline});
+
+    let flights = await config.flightSuretyApp.getFlights();
+    assert.equal(flights.toString(), [flightId]);
+  });
 });
