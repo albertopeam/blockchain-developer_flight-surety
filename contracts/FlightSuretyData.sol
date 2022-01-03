@@ -45,7 +45,7 @@ contract FlightSuretyData {
 
 
     /**
-    * @dev Constructor
+    * Constructor
     *      The deploying account becomes contractOwner
     */
     constructor() payable {
@@ -66,21 +66,19 @@ contract FlightSuretyData {
     // before a function is allowed to be executed.
 
     /**
-    * @dev Modifier that requires the "operational" boolean variable to be "true"
+    * Modifier that requires the "operational" boolean variable to be "true"
     *      This is used on all state changing functions to pause the contract in 
     *      the event there is an issue that needs to be fixed
     */
-    modifier requireIsOperational() 
-    {
+    modifier requireIsOperational() {
         require(operational, "Contract is currently not operational");
         _;  // All modifiers require an "_" which indicates where the function body will be added
     }
 
     /**
-    * @dev Modifier that requires the "ContractOwner" account to be the function caller
+    * Modifier that requires the "ContractOwner" account to be the function caller
     */
-    modifier requireContractOwner()
-    {
+    modifier requireContractOwner() {
         require(msg.sender == contractOwner, "Caller is not contract owner");
         _;
     }
@@ -105,7 +103,7 @@ contract FlightSuretyData {
     /********************************************************************************************/
 
     /**
-    * @dev Get operating status of contract
+    * Get operating status of contract
     *
     * @return A bool that is the current operating status
     */      
@@ -134,7 +132,7 @@ contract FlightSuretyData {
     }
 
     /**
-    * @dev Sets contract operations on/off
+    * Sets contract operations on/off
     *
     * When operational mode is disabled, all write transactions except for this one will fail
     */    
@@ -162,7 +160,7 @@ contract FlightSuretyData {
     /********************************************************************************************/
 
    /**
-    * @dev Add an airline to the registration queue
+    *  Add an airline to the registration queue
     *      Can only be called from FlightSuretyApp contract
     *
     */   
@@ -243,7 +241,7 @@ contract FlightSuretyData {
     }
 
    /**
-    * @dev Initial funding for the insurance. Unless there are too many delayed flights
+    * Initial funding for the insurance. Unless there are too many delayed flights
     *      resulting in insurance payouts, the contract should be self-sustaining
     *
     */   
@@ -260,7 +258,7 @@ contract FlightSuretyData {
     }
 
     /**
-    * @dev Fallback function for funding smart contract.
+    * receive function for funding smart contract.
     *
     */
     receive() external payable {
