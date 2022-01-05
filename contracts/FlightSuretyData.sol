@@ -46,9 +46,16 @@ contract FlightSuretyData {
     mapping(string => Flight) private flights;
     string[] private flightIds;
 
-
     // funds
-    mapping(address => uint256) private funds;
+    mapping(address => uint256) private funds; //TODO: needed?
+
+    // insurances
+    struct Insurance {
+        string flightId;
+        uint256 amount;
+        uint256 pendingToPayAmount;
+    }
+    mapping (address => Insurance[]) private insurances;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -116,6 +123,11 @@ contract FlightSuretyData {
 
     modifier requireFlightNotRegistered(string memory flightId) {
         require(flights[flightId].isRegistered == false, "Flight is already registered");
+        _;
+    }
+
+    modifier requireFlightRegistered(string memory flightId) {
+        require(flights[flightId].isRegistered == true, "Flight is not registered");
         _;
     }
 
@@ -244,17 +256,26 @@ contract FlightSuretyData {
         return flightIds;
     }
 
-   /**
-    * @dev Buy insurance for a flight
-    *
-    */   
-    function buy
-                            (                             
-                            )
-                            external
-                            payable
-    {
+    // Buy insurance for a flight  
+    function buyInsurance(string memory _flightId, address _passenger, uint256 _amount) external payable 
+        requireIsOperational 
+        requireIsCallerAuthorized
+        requireFlightRegistered(_flightId) {
+        insurances[_passenger].push(Insurance({flightId: _flightId, amount: _amount, pendingToPayAmount: 0}));
+    }
 
+    // get insurance status
+    function getInsurance(string memory _flightId, address _passenger) view external 
+        requireIsOperational
+        requireIsCallerAuthorized 
+        requireFlightRegistered(_flightId) returns (string memory flightId, uint256 amount, uint256 pendingToPayAmount) {
+        Insurance[] memory passengerInsurances = insurances[_passenger];
+        for(uint i = 0; i < passengerInsurances.length; i++) {
+            Insurance memory passengerInsurance = passengerInsurances[i];
+            if (keccak256(bytes(passengerInsurance.flightId)) == keccak256(bytes(_flightId))) {
+                return (passengerInsurance.flightId, passengerInsurance.amount, passengerInsurance.pendingToPayAmount);
+            }
+        }          
     }
 
     /**

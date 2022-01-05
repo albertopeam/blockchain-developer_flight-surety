@@ -20,6 +20,7 @@ var Config = async function(accounts) {
 
     let owner = accounts[0];    
     let firstAirline = accounts[1];
+    let passenger = accounts[accounts.length - 1];
 
     let fund = web3.utils.toWei('10', 'ether');
     let flightSuretyData = await FlightSuretyData.new({from: owner, value: fund});
@@ -29,6 +30,7 @@ var Config = async function(accounts) {
     return {
         owner: owner,
         firstAirline: firstAirline,
+        passenger: passenger,
         weiMultiple: (new BigNumber(10)).pow(18),
         testAddresses: testAddresses,
         flightSuretyData: flightSuretyData,

@@ -67,6 +67,18 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireNonEmptyEther() {
+        require(msg.value > 0 ether, "Can't buy insurance for 0 ether");
+        _;
+    }
+
+    modifier requireLessOrEqualThanOneEther() {
+        require(msg.value <= 1 ether, "Can't buy insurance for more than 1 ether");
+        _;
+    }
+    
+        
+
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -120,10 +132,7 @@ contract FlightSuretyApp {
         (, airlineName, airlineAddress,) = contractData.getAirline(_address);
     }
 
-   /**
-    * Register a future flight for insuring.
-    *
-    */  
+    // Register a future flight for insuring.
     function registerFlight(string memory flightId, uint256 timeStamp) external
         requireIsOperational {
         contractData.registerFlight(flightId, timeStamp, msg.sender);
@@ -133,6 +142,21 @@ contract FlightSuretyApp {
     function getFlights() view external
         requireIsOperational returns (string[] memory) {
         return contractData.getFlights();
+    }
+
+    // buy insurance for flight
+    function buyInsurance(string memory flightId) external payable
+        requireIsOperational
+        requireNonEmptyEther
+        requireLessOrEqualThanOneEther {        
+        contractData.buyInsurance(flightId, msg.sender, msg.value);
+        payable(contractData).transfer(msg.value);
+    }
+
+    // get insurance status
+    function getInsurance(string memory _flightId) view external 
+        requireIsOperational returns (string memory flightId, uint256 amount, uint256 pendingToPayAmount) {
+        return contractData.getInsurance(_flightId, msg.sender);
     }
     
    /**
@@ -161,7 +185,8 @@ contract FlightSuretyApp {
     // fund airline
     function fundAirline() external payable   
         requireIsOperational  
-        requireAirlineFundEther {        
+        requireAirlineFundEther {     
+
         contractData.fund{value: msg.value}(msg.sender);
     }
 

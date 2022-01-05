@@ -8,8 +8,13 @@ contract('Flight Surety Tests', async (accounts) => {
   var config;
   const airlineName = "test airline";
   const fundAmount = web3.utils.toWei('10', 'ether');
-  const fundAmountBN = web3.utils.toBN(fundAmount)
+  const fundAmountBN = web3.utils.toBN(fundAmount);
   const notEnoughFundAmount = web3.utils.toWei('9', 'ether');
+  const zeroEther = web3.utils.toWei('0', 'ether');
+  const oneEther = web3.utils.toWei('1', 'ether');
+  const oneEtherBN = web3.utils.toBN(oneEther);
+  const moreThanOneEther = web3.utils.toWei('1000000000000000001', 'wei');
+  const flightId = "flight";
 
   before('setup contract', async () => {
     config = await Test.Config(accounts);
@@ -195,11 +200,36 @@ contract('Flight Surety Tests', async (accounts) => {
   });
 
   it('(airline) when registering flight then it can be retrieved', async () => {
-    let flightId = "flight";
-
     await config.flightSuretyApp.registerFlight(flightId, new Date().getTime(), {from: config.firstAirline});
 
     let flights = await config.flightSuretyApp.getFlights();
     assert.equal(flights.toString(), [flightId]);
+  });
+
+  it('(passenger) given registered flight when buying flight insurance with 0 ether then fail', async () => {
+    await truffleAssert.fails(
+      config.flightSuretyApp.buyInsurance(flightId, {from: config.passenger, value: zeroEther}),
+      "Can't buy insurance for 0 ether");
+  });
+
+  it('(passenger) given registered flight when buying flight insurance with more than 1 ether then fail', async () => {
+    await truffleAssert.fails(
+      config.flightSuretyApp.buyInsurance(flightId, {from: config.passenger, value: moreThanOneEther}),
+      "Can't buy insurance for more than 1 ether");
+  });
+
+  it('(passenger) given registered flight when buying flight insurance with less than 1 ether then success', async () => {
+    let initialDataContractBalance = await web3.eth.getBalance(config.flightSuretyData.address);
+    await config.flightSuretyApp.buyInsurance(flightId, {from: config.passenger, value: oneEther});
+
+    let insurance = await config.flightSuretyApp.getInsurance(flightId, {from: config.passenger});    
+    assert.equal(insurance.flightId, flightId);
+    assert.equal(insurance.amount, oneEther);
+    assert.equal(insurance.pendingToPayAmount, 0);
+    let finalDataContractBalance = await web3.eth.getBalance(config.flightSuretyData.address);
+    console.log(finalDataContractBalance.toString());
+    const expectedDataContractBalance = web3.utils.toBN(initialDataContractBalance).add(oneEtherBN).toString();
+    console.log(expectedDataContractBalance.toString());    
+    assert.equal(finalDataContractBalance, expectedDataContractBalance);
   });
 });
