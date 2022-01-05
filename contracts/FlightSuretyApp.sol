@@ -186,8 +186,8 @@ contract FlightSuretyApp {
     function fundAirline() external payable   
         requireIsOperational  
         requireAirlineFundEther {     
-
-        contractData.fund{value: msg.value}(msg.sender);
+        contractData.fundAirline(msg.sender, msg.value);
+        payable(contractData).transfer(msg.value);
     }
 
 // region ORACLE MANAGEMENT

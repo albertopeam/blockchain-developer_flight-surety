@@ -227,9 +227,7 @@ contract('Flight Surety Tests', async (accounts) => {
     assert.equal(insurance.amount, oneEther);
     assert.equal(insurance.pendingToPayAmount, 0);
     let finalDataContractBalance = await web3.eth.getBalance(config.flightSuretyData.address);
-    console.log(finalDataContractBalance.toString());
     const expectedDataContractBalance = web3.utils.toBN(initialDataContractBalance).add(oneEtherBN).toString();
-    console.log(expectedDataContractBalance.toString());    
     assert.equal(finalDataContractBalance, expectedDataContractBalance);
   });
 });

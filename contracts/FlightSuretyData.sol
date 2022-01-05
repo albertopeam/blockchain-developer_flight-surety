@@ -261,6 +261,7 @@ contract FlightSuretyData {
         requireIsOperational 
         requireIsCallerAuthorized
         requireFlightRegistered(_flightId) {
+        funds[_passenger] = funds[_passenger].add(_amount);
         insurances[_passenger].push(Insurance({flightId: _flightId, amount: _amount, pendingToPayAmount: 0}));
     }
 
@@ -302,29 +303,20 @@ contract FlightSuretyData {
     {
     }
 
-   /**
-    * Initial funding for the insurance. Unless there are too many delayed flights
-    *      resulting in insurance payouts, the contract should be self-sustaining
-    *
-    */   
-    function fund(address _address) public payable 
+    //Initial funding for the insurance. Unless there are too many delayed flights resulting in insurance payouts, the contract should be self-sustaining
+    function fundAirline(address _airlineAddress, uint256 _amount) public payable 
         requireIsOperational
         requireIsCallerAuthorized
-        requireIsRegisteredAirline(_address) {
-        funds[_address] = funds[_address].add(msg.value);        
-        airlines[_address].isFunded = true;
+        requireIsRegisteredAirline(_airlineAddress) {
+        funds[_airlineAddress] = funds[_airlineAddress].add(_amount);    
+        airlines[_airlineAddress].isFunded = true;
     }
 
     function getFlightKey(address airline, string memory flight, uint256 timestamp) pure internal returns(bytes32) {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
     }
 
-    /**
-    * receive function for funding smart contract.
-    *
-    */
-    receive() external payable {
-        fund(msg.sender);
-    }
+    // receive function for funding smart contract.
+    receive() external payable {}
 }
 
