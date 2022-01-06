@@ -44,18 +44,18 @@ contract FlightSuretyData {
         address airline;
     }
     mapping(string => Flight) private flights;
-    string[] private flightIds;
+    string[] private flightIds;    
 
     // funds
     mapping(address => uint256) private funds; //TODO: needed?
 
     // insurances
     struct Insurance {
-        string flightId;
+        address passenger;
         uint256 amount;
         uint256 pendingToPayAmount;
     }
-    mapping (address => Insurance[]) private insurances;
+    mapping (string => Insurance[]) private flightInsurances;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -133,10 +133,10 @@ contract FlightSuretyData {
 
     modifier requirePassengerNotBoughtInsurance(address passenger, string memory flightId) {
         bytes32 flightIdBytes = keccak256(bytes(flightId));
-        Insurance[] memory passengerInsurances = insurances[passenger];        
-        for(uint i = 0; i < passengerInsurances.length; i++) {
-            Insurance memory passengerInsurance = passengerInsurances[i];
-            require(keccak256(bytes(passengerInsurance.flightId)) != flightIdBytes, "Passenger already bought insurance for flight");
+        Insurance[] memory insurances = flightInsurances[flightId];        
+        for(uint i = 0; i < insurances.length; i++) {
+            Insurance memory insurance = insurances[i];            
+            require(insurance.passenger != passenger, "Passenger already bought insurance for flight");
         }
         _;
     } 
@@ -247,14 +247,14 @@ contract FlightSuretyData {
     }
 
     // regiter flight
-    function registerFlight(string memory flightId, uint256 timeStamp, address airlineAddress) external
+    function registerFlight(string memory flightId, uint256 timeStamp, address airlineAddress, uint8 statusCode) external
         requireIsOperational 
         requireIsCallerAuthorized 
         requireIsAirline(airlineAddress)
         requireFlightNotRegistered(flightId) {
         flights[flightId].airline = airlineAddress;
         flights[flightId].updatedTimestamp = timeStamp;
-        flights[flightId].statusCode = 0;
+        flights[flightId].statusCode = statusCode;
         flights[flightId].isRegistered = true;
         flightIds.push(flightId);
     }
@@ -266,6 +266,14 @@ contract FlightSuretyData {
         return flightIds;
     }
 
+    // get flight
+    function getFlight(string memory _flightId) view external
+        requireIsOperational 
+        requireIsCallerAuthorized 
+        requireFlightRegistered(_flightId) returns (string memory flight, uint8 statusCode, uint256 updatedTimestamp, address airline) {
+        return (_flightId, flights[_flightId].statusCode, flights[_flightId].updatedTimestamp, flights[_flightId].airline);
+    }
+
     // Buy insurance for a flight  
     function buyInsurance(string memory _flightId, address _passenger, uint256 _amount) external payable 
         requireIsOperational 
@@ -273,32 +281,42 @@ contract FlightSuretyData {
         requireFlightRegistered(_flightId)
         requirePassengerNotBoughtInsurance(_passenger, _flightId) {
         funds[_passenger] = funds[_passenger].add(_amount);
-        insurances[_passenger].push(Insurance({flightId: _flightId, amount: _amount, pendingToPayAmount: 0}));
+        flightInsurances[_flightId].push(Insurance({passenger: _passenger, amount: _amount, pendingToPayAmount: 0}));
     }
 
     // get insurance status
     function getInsurance(string memory _flightId, address _passenger) view external 
         requireIsOperational
         requireIsCallerAuthorized 
-        requireFlightRegistered(_flightId) returns (string memory flightId, uint256 amount, uint256 pendingToPayAmount) {
-        Insurance[] memory passengerInsurances = insurances[_passenger];
-        for(uint i = 0; i < passengerInsurances.length; i++) {
-            Insurance memory passengerInsurance = passengerInsurances[i];
-            if (keccak256(bytes(passengerInsurance.flightId)) == keccak256(bytes(_flightId))) {
-                return (passengerInsurance.flightId, passengerInsurance.amount, passengerInsurance.pendingToPayAmount);
+        requireFlightRegistered(_flightId) returns (string memory flightId, address passenger, uint256 amount, uint256 pendingToPayAmount) {
+        Insurance[] memory insurances = flightInsurances[_flightId];
+        for(uint i = 0; i < insurances.length; i++) {
+            Insurance memory insurance = insurances[i];
+            if (insurance.passenger == _passenger) {
+                return (_flightId, insurance.passenger, insurance.amount, insurance.pendingToPayAmount);
             }
         }          
     }
+    
+    // process received flight status
+    function updateFlightStatus(string memory _flight, uint256 _timestamp, uint8 _statusCode) external
+        requireIsOperational
+        requireIsCallerAuthorized 
+        requireFlightRegistered(_flight) {
+        flights[_flight].statusCode = _statusCode;
+        flights[_flight].updatedTimestamp = _timestamp;
+    }
 
-    /**
-     *  @dev Credits payouts to insurees
-    */
-    function creditInsurees
-                                (
-                                )
-                                external
-                                pure
-    {
+    // Credits payouts to insurees
+    function creditInsurees(string memory _flightId, uint256 multiplier, uint256 divider) external 
+        requireIsOperational
+        requireIsCallerAuthorized 
+        requireFlightRegistered(_flightId) {
+        Insurance[] storage insurances = flightInsurances[_flightId];
+        for (uint i = 0; i<insurances.length;i++) {
+            Insurance storage insurance = insurances[i];
+            insurance.pendingToPayAmount = insurance.amount.mul(multiplier).div(divider);
+        }
     }
     
 

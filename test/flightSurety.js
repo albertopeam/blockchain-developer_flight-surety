@@ -12,13 +12,18 @@ contract('Flight Surety Tests', async (accounts) => {
   const notEnoughFundAmount = web3.utils.toWei('9', 'ether');
   const zeroEther = web3.utils.toWei('0', 'ether');
   const oneEther = web3.utils.toWei('1', 'ether');
+  const oneEtherAndAHalf = web3.utils.toWei('1500', 'milli');
   const oneEtherBN = web3.utils.toBN(oneEther);
   const moreThanOneEther = web3.utils.toWei('1000000000000000001', 'wei');
   const flightId = "flight";
+  const STATUS_CODE_ON_TIME = 10;
+  const STATUS_CODE_LATE_AIRLINE = 20;
+  var registerOracleFee; 
 
   before('setup contract', async () => {
     config = await Test.Config(accounts);
     await config.flightSuretyData.authorizeCaller(config.flightSuretyApp.address);
+    registerOracleFee = await config.flightSuretyApp.REGISTRATION_FEE.call();
   });
 
   it(`(deploy) transfers 10 eth from deployer to data contract`, async function(){
@@ -225,6 +230,7 @@ contract('Flight Surety Tests', async (accounts) => {
     let insurance = await config.flightSuretyApp.getInsurance(flightId, {from: config.passenger});    
     assert.equal(insurance.flightId, flightId);
     assert.equal(insurance.amount, oneEther);
+    assert.equal(insurance.passenger, config.passenger);
     assert.equal(insurance.pendingToPayAmount, 0);
     let finalDataContractBalance = await web3.eth.getBalance(config.flightSuretyData.address);
     const expectedDataContractBalance = web3.utils.toBN(initialDataContractBalance).add(oneEtherBN).toString();
@@ -237,7 +243,44 @@ contract('Flight Surety Tests', async (accounts) => {
       "Passenger already bought insurance for flight");
   });
 
-  it('(oracle) given registered flight when buying flight insurance with less than 1 ether then success', async () => {
-    assert.equal(true, false);
+  it('(oracle) given registered flight when fetch flight status and submit min responses for delayed then emit flightStatusInfo, update flight status and credit to withdraw insurees', async () => {
+    const onTimeResponses = 2;    
+    const airline =  config.firstAirline;
+    const timestamp = new Date().getTime();
+    var index;    
+    let fetchTransaction = await config.flightSuretyApp.fetchFlightStatus(airline, flightId, timestamp);    
+    truffleAssert.eventEmitted(fetchTransaction, "OracleRequest", (event) => {
+      index = event.index;
+      return event.airline === airline && event.flight === flightId && event.timestamp == timestamp;
+    });
+    var oraclesAddress = []
+    var accountIdx = 0;
+    while(oraclesAddress.length < 4) {   
+      await config.flightSuretyApp.registerOracle({ from: accounts[accountIdx], value: registerOracleFee });
+      let indexes = await config.flightSuretyApp.getMyIndexes.call({from: accounts[accountIdx]});
+      if (indexes.toString().includes(index)) {
+        oraclesAddress.push(accounts[accountIdx]);
+      }      
+    }
+
+    await config.flightSuretyApp.submitOracleResponse(index, airline, flightId, timestamp, STATUS_CODE_ON_TIME, {from: oraclesAddress[0]});
+    for (let i=0; i<onTimeResponses;i++) {
+      await config.flightSuretyApp.submitOracleResponse(index, airline, flightId, timestamp, STATUS_CODE_LATE_AIRLINE, {from: oraclesAddress[i+1]});
+    }
+    let transaction = await config.flightSuretyApp.submitOracleResponse(index, airline, flightId, timestamp, STATUS_CODE_LATE_AIRLINE, {from: oraclesAddress[3]});
+
+    truffleAssert.eventEmitted(transaction, "FlightStatusInfo", (event) => {
+      return event.airline === airline && event.flight === flightId && event.timestamp == timestamp && event.status == STATUS_CODE_LATE_AIRLINE;
+    });
+    let flightData = await config.flightSuretyApp.getFlight(flightId);
+    assert.equal(flightData.flight, flightId);
+    assert.equal(flightData.airline, airline);
+    assert.equal(flightData.updatedTimestamp, timestamp);    
+    assert.equal(flightData.statusCode, STATUS_CODE_LATE_AIRLINE);
+    let insurance = await config.flightSuretyApp.getInsurance(flightId, {from: config.passenger});
+    assert.equal(insurance.flightId, flightId);
+    assert.equal(insurance.passenger, config.passenger);
+    assert.equal(insurance.amount, oneEther);
+    assert.equal(insurance.pendingToPayAmount, oneEtherAndAHalf);
   });
 });

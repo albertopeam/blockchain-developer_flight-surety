@@ -31,6 +31,8 @@ contract FlightSuretyApp {
     address private contractOwner;          // Account used to deploy contract
     FlightSuretyData private contractData;
     uint8 private requireAtLeastHalfOfTheVotes = 2;
+    uint256 private constant multiplier = 3;
+    uint256 private constant divider = 2;
  
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -135,13 +137,19 @@ contract FlightSuretyApp {
     // Register a future flight for insuring.
     function registerFlight(string memory flightId, uint256 timeStamp) external
         requireIsOperational {
-        contractData.registerFlight(flightId, timeStamp, msg.sender);
+        contractData.registerFlight(flightId, timeStamp, msg.sender, STATUS_CODE_UNKNOWN);
     }
 
     // get flights
     function getFlights() view external
         requireIsOperational returns (string[] memory) {
         return contractData.getFlights();
+    }
+
+    // get flight
+    function getFlight(string memory _flightId) view external
+        requireIsOperational returns (string memory flight, uint8 statusCode, uint256 updatedTimestamp, address airline) {
+        return contractData.getFlight(_flightId);
     }
 
     // buy insurance for flight
@@ -155,18 +163,20 @@ contract FlightSuretyApp {
 
     // get insurance status
     function getInsurance(string memory _flightId) view external 
-        requireIsOperational returns (string memory flightId, uint256 amount, uint256 pendingToPayAmount) {
+        requireIsOperational returns (string memory flightId, address passenger, uint256 amount, uint256 pendingToPayAmount) {
         return contractData.getInsurance(_flightId, msg.sender);
     }
-    
-   /**
-    * @dev Called after oracle has updated flight status
-    *
-    */  
-    function processFlightStatus(address airline, string memory flight, uint256 timestamp, uint8 statusCode) internal {
 
+    // Called after oracle has updated flight status
+    function processFlightStatus(string memory _flight, uint256 _timestamp, uint8 newStatusCode) internal {
+        (,uint8 statusCode,,) = contractData.getFlight(_flight);
+        if (statusCode == STATUS_CODE_UNKNOWN) {
+            contractData.updateFlightStatus(_flight, _timestamp, newStatusCode);
+            if (newStatusCode == STATUS_CODE_LATE_AIRLINE) {
+                contractData.creditInsurees(_flight, multiplier, divider);
+            }
+        }       
     }
-
 
     // Generate a request for oracles to fetch flight information
     function fetchFlightStatus(address airline, string memory flight, uint256 timestamp) external
@@ -276,10 +286,9 @@ contract FlightSuretyApp {
             emit FlightStatusInfo(airline, flight, timestamp, statusCode);
 
             // Handle flight status as appropriate
-            processFlightStatus(airline, flight, timestamp, statusCode);
+            processFlightStatus(flight, timestamp, statusCode);
         }
     }
-
 
     function getFlightKey(address airline, string memory flight, uint256 timestamp) pure internal returns(bytes32) {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
