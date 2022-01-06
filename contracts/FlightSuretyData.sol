@@ -131,6 +131,16 @@ contract FlightSuretyData {
         _;
     }
 
+    modifier requirePassengerNotBoughtInsurance(address passenger, string memory flightId) {
+        bytes32 flightIdBytes = keccak256(bytes(flightId));
+        Insurance[] memory passengerInsurances = insurances[passenger];        
+        for(uint i = 0; i < passengerInsurances.length; i++) {
+            Insurance memory passengerInsurance = passengerInsurances[i];
+            require(keccak256(bytes(passengerInsurance.flightId)) != flightIdBytes, "Passenger already bought insurance for flight");
+        }
+        _;
+    } 
+
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
@@ -260,7 +270,8 @@ contract FlightSuretyData {
     function buyInsurance(string memory _flightId, address _passenger, uint256 _amount) external payable 
         requireIsOperational 
         requireIsCallerAuthorized
-        requireFlightRegistered(_flightId) {
+        requireFlightRegistered(_flightId)
+        requirePassengerNotBoughtInsurance(_passenger, _flightId) {
         funds[_passenger] = funds[_passenger].add(_amount);
         insurances[_passenger].push(Insurance({flightId: _flightId, amount: _amount, pendingToPayAmount: 0}));
     }

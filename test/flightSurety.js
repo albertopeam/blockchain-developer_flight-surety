@@ -230,4 +230,14 @@ contract('Flight Surety Tests', async (accounts) => {
     const expectedDataContractBalance = web3.utils.toBN(initialDataContractBalance).add(oneEtherBN).toString();
     assert.equal(finalDataContractBalance, expectedDataContractBalance);
   });
+
+  it('(passenger) given registered flight when buying flight insurance twice then fails as already bought insurance', async () => {
+    await truffleAssert.fails(
+      config.flightSuretyApp.buyInsurance(flightId, {from: config.passenger, value: oneEther}),
+      "Passenger already bought insurance for flight");
+  });
+
+  it('(oracle) given registered flight when buying flight insurance with less than 1 ether then success', async () => {
+    assert.equal(true, false);
+  });
 });
