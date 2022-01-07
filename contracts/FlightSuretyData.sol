@@ -132,7 +132,6 @@ contract FlightSuretyData {
     }
 
     modifier requirePassengerNotBoughtInsurance(address passenger, string memory flightId) {
-        bytes32 flightIdBytes = keccak256(bytes(flightId));
         Insurance[] memory insurances = flightInsurances[flightId];        
         for(uint i = 0; i < insurances.length; i++) {
             Insurance memory insurance = insurances[i];            
@@ -318,18 +317,26 @@ contract FlightSuretyData {
             insurance.pendingToPayAmount = insurance.amount.mul(multiplier).div(divider);
         }
     }
-    
 
-    /**
-     *  @dev Transfers eligible payout funds to insuree
-     *
-    */
-    function pay
-                            (
-                            )
-                            external
-                            pure
-    {
+    // Transfers eligible payout funds to insuree
+    function withdraw(address passenger, string memory flight) payable external 
+        requireIsOperational 
+        requireIsCallerAuthorized {
+        Insurance[] storage insurances = flightInsurances[flight];  
+        uint256 index;
+        for(uint256 i = 0; i < insurances.length; i++) {
+            Insurance memory tmp = insurances[i];
+            if (tmp.passenger == passenger) {
+                index = i;
+                break;
+            }
+        }
+        Insurance storage insurance = insurances[index];
+        require(insurance.passenger == passenger, "Passenger not found for flight");
+        require(insurance.pendingToPayAmount > 0, "Passenger hasn't pending payments for flight");
+        uint256 amountToPay = insurance.pendingToPayAmount;
+        insurance.pendingToPayAmount = 0;
+        payable(passenger).transfer(amountToPay);
     }
 
     //Initial funding for the insurance. Unless there are too many delayed flights resulting in insurance payouts, the contract should be self-sustaining

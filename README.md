@@ -54,8 +54,8 @@ Deploy the contents of the ./dapp folder
 
 1. npm install
 2. metamask connected to localhost 8545
-3. ganache-cli --port=8545 --accounts 50 --defaultBalanceEther 10000
-   ganache-cli --port=8545 --accounts 50 --defaultBalanceEther 10000 -g 100000000000
+3. ganache-cli --port=8545 --accounts 50 --defaultBalanceEther 10000 -g 100000000000
+   ganache-cli --port=8545 --accounts 50 --defaultBalanceEther 10000
 4. truffle console
    1. compile
    2. test

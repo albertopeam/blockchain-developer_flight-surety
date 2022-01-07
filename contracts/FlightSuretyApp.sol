@@ -200,6 +200,12 @@ contract FlightSuretyApp {
         payable(contractData).transfer(msg.value);
     }
 
+    // Transfers eligible payout funds to insuree
+    function withdraw(string memory flight) payable external 
+        requireIsOperational {
+        contractData.withdraw(msg.sender, flight);
+    }
+
 // region ORACLE MANAGEMENT
 
     // Incremented to add pseudo-randomness at various points

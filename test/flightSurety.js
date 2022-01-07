@@ -13,6 +13,7 @@ contract('Flight Surety Tests', async (accounts) => {
   const zeroEther = web3.utils.toWei('0', 'ether');
   const oneEther = web3.utils.toWei('1', 'ether');
   const oneEtherAndAHalf = web3.utils.toWei('1500', 'milli');
+  const oneEtherAndAHalfBN = web3.utils.toBN(oneEtherAndAHalf);;
   const oneEtherBN = web3.utils.toBN(oneEther);
   const moreThanOneEther = web3.utils.toWei('1000000000000000001', 'wei');
   const flightId = "flight";
@@ -150,14 +151,14 @@ contract('Flight Surety Tests', async (accounts) => {
     assert.equal(result, true);
     let finalAirlineBalance = await web3.eth.getBalance(addedAirline);
     let finalDataContractBalance = await web3.eth.getBalance(config.flightSuretyData.address);
-    const gasUsed = transaction.receipt.gasUsed
+    const gasUsed = transaction.receipt.gasUsed;
     const tx = await web3.eth.getTransaction(transaction.tx);
     const gasPricePerUnit = tx.gasPrice;
-    const gasPrice = web3.utils.toBN(gasUsed).mul(web3.utils.toBN(gasPricePerUnit))
-    const expectedFinalAirlineBalance = web3.utils.toBN(initialAirlineBalance).sub(gasPrice).sub(fundAmountBN).toString()
-    assert.equal(finalAirlineBalance, expectedFinalAirlineBalance)
-    const expectedFundBalance = web3.utils.toBN(initialDataContractBalance).add(fundAmountBN).toString()
-    assert.equal(finalDataContractBalance, expectedFundBalance)
+    const gasPrice = web3.utils.toBN(gasUsed).mul(web3.utils.toBN(gasPricePerUnit));
+    const expectedFinalAirlineBalance = web3.utils.toBN(initialAirlineBalance).sub(gasPrice).sub(fundAmountBN).toString();
+    assert.equal(finalAirlineBalance, expectedFinalAirlineBalance);
+    const expectedFundBalance = web3.utils.toBN(initialDataContractBalance).add(fundAmountBN).toString();
+    assert.equal(finalDataContractBalance, expectedFundBalance);
   });
 
   it('(airline) when registering five airlines then last one is not an airline until at least 50% of registered ones register(or vote) it', async () => {
@@ -282,5 +283,33 @@ contract('Flight Surety Tests', async (accounts) => {
     assert.equal(insurance.passenger, config.passenger);
     assert.equal(insurance.amount, oneEther);
     assert.equal(insurance.pendingToPayAmount, oneEtherAndAHalf);
+  });
+
+  it('(passenger) given no credit passenger for flight when try to withdraw then revert', async () => {
+    await truffleAssert.fails(
+      config.flightSuretyApp.withdraw(flightId, {from: config.testAddresses[0]}),
+      "Passenger not found for flight");
+  });
+
+  it('(passenger) given credit insuree for flight when withdraw then insurance pending to pay amount is zero and passenger received payment', async () => {
+    let initialPassengerBalance = await web3.eth.getBalance(config.passenger);
+    let initialContractBalance = await web3.eth.getBalance(config.flightSuretyData.address);
+    let transaction = await config.flightSuretyApp.withdraw(flightId, {from: config.passenger});
+
+    let insurance = await config.flightSuretyApp.getInsurance(flightId, {from: config.passenger});
+    assert.equal(insurance.flightId, flightId);
+    assert.equal(insurance.passenger, config.passenger);
+    assert.equal(insurance.amount, oneEther);
+    assert.equal(insurance.pendingToPayAmount, 0);
+    const gasUsed = transaction.receipt.gasUsed;
+    const tx = await web3.eth.getTransaction(transaction.tx);
+    const gasPricePerUnit = tx.gasPrice;
+    const gasPrice = web3.utils.toBN(gasUsed).mul(web3.utils.toBN(gasPricePerUnit));
+    const finalPassengerBalance = await web3.eth.getBalance(config.passenger);
+    const expectedPassengerBalance = web3.utils.toBN(initialPassengerBalance).add(oneEtherAndAHalfBN).sub(gasPrice).toString();
+    assert.equal(finalPassengerBalance, expectedPassengerBalance);
+    let finalContractBalance = await web3.eth.getBalance(config.flightSuretyData.address);
+    let expectedContractBalance = web3.utils.toBN(initialContractBalance).sub(oneEtherAndAHalfBN).toString();
+    assert.equal(finalContractBalance, expectedContractBalance);
   });
 });
