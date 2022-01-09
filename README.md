@@ -60,8 +60,8 @@ Deploy the contents of the ./dapp folder
    1. compile
    2. test
    3. migrate
-5. npm run dapp
-6. npm run server
+5. npm run server
+6. npm run dapp
 
 ## Info
 

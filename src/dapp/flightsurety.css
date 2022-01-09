@@ -12,8 +12,20 @@ body {
     padding: 40px;
 }
 
+.top-10 {
+    margin-top: 10px;
+}
+
 .top-20 {
     margin-top: 20px;
+}
+
+.top-40 {
+    margin-top: 40px;
+}
+
+.bottom-20 {
+    margin-bottom: 20px;
 }
 
 h5 {
@@ -39,4 +51,16 @@ label.form {
 }
 input {
     margin-right: 30px;
+}
+
+h5.vert-align {
+    margin: auto;
+}
+
+i.fa {
+    color: white;
+}
+
+.text-center {
+    text-align: center;
 }
