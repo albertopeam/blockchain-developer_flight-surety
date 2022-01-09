@@ -103,6 +103,15 @@ contract('Flight Surety Tests', async (accounts) => {
     assert.equal(numAirlines, 1);
   })
 
+  it('(airline) given created airline then it can be retrieved', async () => {
+    let airlines = await config.flightSuretyApp.getAirlines.call({from: config.owner});
+    
+    assert.equal(airlines.addresses.length, 1);
+    assert.equal(airlines.names.length, 1);
+    assert.equal(airlines.addresses[0], config.owner);
+    assert.equal(airlines.names[0], "Deployer airline");
+  });
+
   it('(airline) cannot register an Airline using registerAirline() if it is not funded', async () => {
     let newAirline = accounts[2];
 

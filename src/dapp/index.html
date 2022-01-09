@@ -22,11 +22,21 @@
 
     <main class="container">
         <div class="row top-20 bottom-20">
-            <div class="col-8">
+            <div class="col-4">
                 <div id="display-wrapper">
                 </div> 
             </div>
-            <div class="col-4">
+            <div class="col-5">
+                <div class="row">
+                    <h5 class="col-10 vert-align">Airlines</h5>
+                    <button type="button" class="btn btn-rounded btn-icon" id="submit-airlines"> <i class="fa fa-refresh"></i> </button>
+                </div>
+                <div class="top-10 text-center">
+                    <span hidden=true id="airlines-empty">No Airlines</span>
+                    <ul hidden=true class="list-group" id="airlines-ul"></ul>
+                </div>
+            </div>
+            <div class="col-3">
                 <div class="row">
                     <h5 class="col-10 vert-align">Flights</h5>
                     <button type="button" class="btn btn-rounded btn-icon" id="submit-flights"> <i class="fa fa-refresh"></i> </button>

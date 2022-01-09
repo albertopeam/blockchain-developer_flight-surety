@@ -23,6 +23,7 @@ contract FlightSuretyData {
     }
     mapping(address => Airline) private airlines;  
     uint256 private numAirlines;  
+    address[] private airlineAddresses;    
 
     // enqueued airlines
     struct EnqueuedAirline {
@@ -73,6 +74,7 @@ contract FlightSuretyData {
         funds[msg.sender] = funds[msg.sender].add(msg.value);    
         airlines[msg.sender] = Airline({isRegistered: true, isFunded: true, name: "Deployer airline"});
         numAirlines = numAirlines.add(1); 
+        airlineAddresses.push(msg.sender);
         payable(this).transfer(msg.value);
     }
 
@@ -154,21 +156,37 @@ contract FlightSuretyData {
     }
 
     function isAirline(address _address) 
+        requireIsOperational
         requireIsCallerAuthorized external view returns(bool) {
         return airlines[_address].isRegistered && airlines[_address].isFunded;
     }
 
+    // get airlines
+    function getAirlines() 
+        requireIsOperational 
+        requireIsCallerAuthorized external view returns(address[] memory, string[] memory) {
+        string[] memory names = new string[](airlineAddresses.length);
+        for(uint256 i=0;i<airlineAddresses.length;i++) {
+            names[i] = airlines[airlineAddresses[i]].name;
+        }
+        return (airlineAddresses, names);
+    }
+
+    // get airline
     function getAirline(address _address) 
+        requireIsOperational
         requireIsCallerAuthorized external view returns(bool isRegistered, string memory name, address addr, bool isFunded) {
         return (airlines[_address].isRegistered, airlines[_address].name, _address, airlines[_address].isFunded);
     }
 
     function getEnqueuedAirline(address _address) 
+        requireIsOperational
         requireIsCallerAuthorized external view returns(bool isEnqueued, string memory name, address addr, uint256 numVotesInFavour, uint256 numAirlinesToVote) {
         return (enqueuedAirlines[_address].isEnqueued, enqueuedAirlines[_address].name, _address, enqueuedAirlines[_address].numVotesInFavour, enqueuedAirlines[_address].numAirlines);
     }
 
     function registeredNumberOfAirlines() 
+        requireIsOperational
         requireIsCallerAuthorized external view returns(uint256) {
         return numAirlines;
     }
@@ -238,6 +256,7 @@ contract FlightSuretyData {
         requireIsNotRegisteredAirline(_address) returns (bool) {             
         airlines[_address] = Airline({isRegistered: true, isFunded: false, name: _name});
         numAirlines = numAirlines.add(1); 
+        airlineAddresses.push(_address);
         return true;
     }
 

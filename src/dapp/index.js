@@ -30,6 +30,11 @@ import './flightsurety.css';
             getFlights();
         })
 
+        // Obtain airlines
+        DOM.elid('submit-airlines').addEventListener('click', () => {
+            getAirlines();
+        })
+
         async function getFlights() {
             let flights = await contract.getFlights();
             if (flights.length == 0) {
@@ -45,6 +50,23 @@ import './flightsurety.css';
             }
         }
 
+        async function getAirlines() {
+            let airlines = await contract.getAirlines();  
+            if (airlines.length == 0) {
+                DOM.elid("airlines-empty").hidden = false;
+                DOM.elid("airlines-ul").hidden = true;
+            } else {
+                DOM.elid("airlines-ul").hidden = false;
+                DOM.elid("airlines-empty").hidden = true;
+                removeChilds(DOM.elid("airlines-ul"));                
+                airlines.forEach( element => {
+                    let airline = `${element.name} ${element.address}`
+                    DOM.elid("airlines-ul").appendChild(DOM.li({className:'list-group-item py-0 field-value address'}, airline));
+                });
+            }
+        }
+
+        getAirlines();
         getFlights();
     });
 })();

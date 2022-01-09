@@ -78,8 +78,6 @@ contract FlightSuretyApp {
         require(msg.value <= 1 ether, "Can't buy insurance for more than 1 ether");
         _;
     }
-    
-        
 
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
@@ -132,6 +130,12 @@ contract FlightSuretyApp {
         requireIsAirline(_address)
         returns(string memory airlineName, address airlineAddress) {
         (, airlineName, airlineAddress,) = contractData.getAirline(_address);
+    }
+
+    // get airlines
+    function getAirlines() 
+        requireIsOperational external view returns(address[] memory addresses, string[] memory names) {
+        return contractData.getAirlines();
     }
 
     // Register a future flight for insuring.

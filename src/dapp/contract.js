@@ -58,6 +58,16 @@ export default class Contract {
         return await this.flightSuretyApp.methods.getFlights().call({ from: owner});
     }
 
+    async getAirlines() {
+        let owner = await this._owner();
+        let airlines = await this.flightSuretyApp.methods.getAirlines().call({ from: owner});
+        let addresses = airlines.addresses;
+        let names = airlines.names;
+        return addresses.map(function(element, index) {
+            return {address: element, name: names[index]};
+        });
+    }
+
     async _owner() {        
         let accounts = await this.web3.eth.getAccounts();
         return accounts[0];
