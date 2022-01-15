@@ -47,7 +47,7 @@ export default class Contract {
                 .send({ from: sender});
             return {result: payload, error: null};
         } catch (error) {
-            return {result: null, error: error};
+            return {result: payload, error: error};
         }
     }
 
@@ -59,7 +59,6 @@ export default class Contract {
                 .call({ from: owner});
             return flights != null ? flights : [];
         } catch (error) {
-            console.log(`getFlights error ${error}`);
             return [];
         }
     }
@@ -75,11 +74,9 @@ export default class Contract {
                     return {address: element, name: names[index]};
                 });
             } else {
-                console.log(`no airlines`);
                 return [];
             }
         } catch (error) {
-            console.log(`getAirlines error ${error}`);
             return [];
         }
     }
@@ -103,7 +100,7 @@ export default class Contract {
 
     async purchaseInsurance(flight, amount) {
         if (flight == "" || amount == "") {
-            return
+            return {error: "Empty flight or/and amount", success: false}
         }
         let sender = await this._sender();
         let value = this.web3.utils.toWei(amount, 'wei');
@@ -151,19 +148,24 @@ export default class Contract {
         }
     }
 
-    subscribe(flight, callback) {
-        console.log(flight);
+    subscribe(params, callback) {
+        let flight = params.flight;
+        let timestamp = params.timestamp;
+        let airline = params.airline;
         let self = this;
         this.flightSuretyApp.once('FlightStatusInfo', {
             filter: {flight: flight},
             fromBlock: 'latest'
         }, function(error, event){ 
             if (error) { 
-                console.log(error);
-                let err = {message: error, flight: flight};
-                callback({result: null, error: err});
+                let data = {
+                    airline: airline, 
+                    flight: flight, 
+                    timestamp: timestamp, 
+                    status: null
+                };
+                callback({result: data, error: error.message});
               } else {
-                console.log(event);
                 let eventResult = event['returnValues'];
                 var status = "Unknown";
                 switch(eventResult.status) {
@@ -197,8 +199,6 @@ export default class Contract {
     
     async _sender() {        
         let accounts = await this.web3.eth.getAccounts();
-        console.log(`accounts ${accounts}`);
-        console.log(`sender ${accounts[0]}`);
         return accounts[0];
     }
 }

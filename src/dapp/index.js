@@ -49,12 +49,13 @@ let App = {
         // User-submitted transaction
         DOM.elid('submit-oracle').addEventListener('click', async () => {
             let flight = DOM.elid('flight-status-id').value;
-            let response = await this.contract.fetchFlightStatus(flight);
+            let response = await this.contract.fetchFlightStatus(flight);            
             if (response.error != null) {                
                 display('Oracles', 'Trigger oracles', [ { label: 'Fetch Flight Status', error: response.error.message, value: flight} ]);
-            } else if (response.result != null) {                
-                display('Oracles', 'Trigger oracles', [ { label: 'Fetch Flight Status', error: response.error, value: response.result.flight + ' ' + response.result.timestamp} ], flight);
-                this.contract.subscribe(response.result.flight, this.flightStatus);
+            } else if (response.result != null) {   
+                let id = response.result.flight + response.result.timestamp;         
+                display('Oracles', 'Trigger oracles', [ { label: 'Fetch Flight Status', error: response.error, value: response.result.flight + ' ' + response.result.timestamp} ], id);
+                this.contract.subscribe(response.result, this.flightStatus);
             }        
         })
 
@@ -119,7 +120,6 @@ let App = {
 
     getAirlines: async function() {        
         let airlines = await this.contract.getAirlines();  
-        console.log(`getting airlines ${airlines}`);
         if (airlines.length == 0) {
             DOM.elid("airlines-empty").hidden = false;
             DOM.elid("airlines-ul").hidden = true;
@@ -135,17 +135,12 @@ let App = {
     }, 
     
     flightStatus: async function(response) {
-        if (response.result != null) {
-            let result = response.result;
-            let flight = result.flight;
-            let date = result.timestamp;
-            let message = `${DOM.elid(flight).textContent} - ${result.status}`
-            DOM.elid(flight).textContent = message;
-        } else if (response.error != null) {
-            let error = response.error;
-            let flight = error.flight;
-            DOM.elid(flight).textContent = `${DOM.elid(flight).textContent} - ${error.message}`;
-        }
+        let id = response.result.flight + response.result.timestamp;
+        if (response.error != null) {
+            DOM.elid(id).textContent = `${DOM.elid(id).textContent} - ${response.error}`;
+        } else if (response.result != null) {
+            DOM.elid(id).textContent = `${DOM.elid(id).textContent} - ${response.result.status}`;
+        } 
     }
 };
 
