@@ -94,8 +94,11 @@ let App = {
 
         // Withdraw
         DOM.elid('submit-withdraw').addEventListener('click', async () => {
-            await this.contract.withdraw(DOM.elid('flight-withdraw-id').value,
-                                         DOM.elid('flight-withdraw-amount').value);
+            let response = await this.contract.withdraw(
+                DOM.elid('flight-withdraw-id').value,
+                DOM.elid('flight-withdraw-amount').value
+            );
+            display('Withdraw', 'Withdraw amount', [ { label: 'Withdraw amount', error: response.error, value: 'successful ' + response.success} ]);
         })
     },
     

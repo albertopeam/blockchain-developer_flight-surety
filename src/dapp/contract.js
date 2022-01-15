@@ -129,10 +129,10 @@ export default class Contract {
             if (insurance.pendingToPayAmount > 0) {
                 return {flight: flight, amount: insurance.pendingToPayAmount, error: null};
              } else {
-                return {flight: null, amount: null, error: null};
+                return {flight: flight, amount: null, error: null};
              }
         } catch (error) {
-            return {flight: null, amount: null, error: error.message};
+            return {flight: flight, amount: null, error: error.message};
         }
     }
 
@@ -145,8 +145,9 @@ export default class Contract {
             await this.flightSuretyApp.methods
                 .withdraw(flight)
                 .send({from: sender});
+            return {error: null, success: true}
         } catch (error) {
-            console.log(error);
+            return {error: error.message, success: false}
         }
     }
 
