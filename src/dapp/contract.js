@@ -116,10 +116,13 @@ export default class Contract {
             let insurance = await this.flightSuretyApp.methods
                 .getInsurance(flight)
                 .call({from: sender});
-            return insurance.pendingToPayAmount > 0 ? insurance.pendingToPayAmount : null;
+            if (insurance.pendingToPayAmount > 0) {
+                return {flight: flight, amount: insurance.pendingToPayAmount, error: null};
+             } else {
+                return {flight: null, amount: null, error: null};
+             }
         } catch (error) {
-            console.log(error);
-            return null;
+            return {flight: null, amount: null, error: error};
         }
     }
 
