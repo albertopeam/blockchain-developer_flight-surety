@@ -76,8 +76,10 @@ let App = {
 
         // Purchase insurance
         DOM.elid('submit-purchase-flight-insurance').addEventListener('click', async () => {
-            await this.contract.purchaseInsurance(DOM.elid('flight-insurance-id').value, 
-                                                  DOM.elid('flight-insurance-amount').value);
+            let response = await this.contract.purchaseInsurance(
+                DOM.elid('flight-insurance-id').value, 
+                DOM.elid('flight-insurance-amount').value);
+            display('Purchase', 'Purchase insurance', [ { label: 'Purchase insurance Status', error: response.error, value: 'successful ' + response.success} ]);
         })
 
         // Get withdraw amount

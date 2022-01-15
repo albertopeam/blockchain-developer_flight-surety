@@ -102,9 +102,14 @@ export default class Contract {
         }
         let sender = await this._sender();
         let value = this.web3.utils.toWei(amount, 'wei');
-        await this.flightSuretyApp.methods
-            .buyInsurance(flight)
-            .send({from: sender, value: value})
+        try {
+            await this.flightSuretyApp.methods
+                .buyInsurance(flight)
+                .send({from: sender, value: value})
+            return {error: null, success: true}
+        } catch (error) {
+            return {error: error.message, success: false}
+        }
     }
 
     async withdrawAmount(flight) {
@@ -122,7 +127,7 @@ export default class Contract {
                 return {flight: null, amount: null, error: null};
              }
         } catch (error) {
-            return {flight: null, amount: null, error: error};
+            return {flight: null, amount: null, error: error.message};
         }
     }
 
