@@ -6,7 +6,13 @@ export default class Contract {
         this.flightSuretyApp = new this.web3.eth.Contract(FlightSuretyApp.abi, address);
         this.owner = null;
         this.airlines = [];
-        this.passengers = [];        
+        this.passengers = []; 
+        this.STATUS_CODE_UNKNOWN = "0";
+        this.STATUS_CODE_ON_TIME = "10";
+        this.STATUS_CODE_LATE_AIRLINE = "20";
+        this.STATUS_CODE_LATE_WEATHER = "30";
+        this.STATUS_CODE_LATE_TECHNICAL = "40";
+        this.STATUS_CODE_LATE_OTHER = "50";
     }
 
     async initialize() {
@@ -29,23 +35,20 @@ export default class Contract {
         return result;
     }
 
-    //TODO: reverts in server
-    async fetchFlightStatus(flight, callback) {
+    async fetchFlightStatus(flight) {
         if (flight == "") {
-            return
+            return {result: null, error: null};
         }
-        let self = this;
         let sender = await this._sender();
-        let payload = {
-            airline: sender,
-            flight: flight,
-            timestamp: Math.floor(Date.now() / 1000)
-        } 
-        self.flightSuretyApp.methods
-            .fetchFlightStatus(payload.airline, payload.flight, payload.timestamp)
-            .send({ from: self.owner}, (error, result) => {
-                callback(error, payload);
-            });
+        let payload = { airline: sender, flight: flight, timestamp: Date.now() };
+        try {
+            await this.flightSuretyApp.methods
+                .fetchFlightStatus(payload.airline, payload.flight, payload.timestamp)
+                .send({ from: sender});
+            return {result: payload, error: null};
+        } catch (error) {
+            return {result: null, error: error};
+        }
     }
 
     async getFlights() {
@@ -87,7 +90,7 @@ export default class Contract {
             return
         }
         let sender = await this._sender();
-        let timestamp = new Date().getTime();
+        let timestamp = Date.now();
         await this.flightSuretyApp.methods
             .registerFlight(flight, timestamp)
             .send({from: sender, gas: 4712388, gasPrice: 100000000000});        
@@ -132,6 +135,50 @@ export default class Contract {
         } catch (error) {
             console.log(error);
         }
+    }
+
+    subscribe(flight, callback) {
+        console.log(flight);
+        let self = this;
+        this.flightSuretyApp.once('FlightStatusInfo', {
+            filter: {flight: flight},
+            fromBlock: 'latest'
+        }, function(error, event){ 
+            if (error) { 
+                console.log(error);
+                let err = {message: error, flight: flight};
+                callback({result: null, error: err});
+              } else {
+                console.log(event);
+                let eventResult = event['returnValues'];
+                var status = "Unknown";
+                switch(eventResult.status) {
+                    case self.STATUS_CODE_ON_TIME:
+                        status = "On time"; 
+                        break;
+                    case self.STATUS_CODE_LATE_AIRLINE:
+                        status = "Late due to airline issues"; 
+                        break;
+                    case self.STATUS_CODE_LATE_WEATHER:
+                        status = "Late due to weather issues"; 
+                        break;
+                    case self.STATUS_CODE_LATE_TECHNICAL:
+                        status = "Late due to technical issues"; 
+                        break;
+                    case self.STATUS_CODE_LATE_OTHER:
+                        status = "Late due to other issues"; 
+                        break;
+                    default: break;
+                  }
+                let data = {
+                    airline: eventResult.airline, 
+                    flight: eventResult.flight, 
+                    timestamp: eventResult.timestamp, 
+                    status: status
+                };
+                callback({result: data, error: null});
+              }    
+        });
     }
     
     async _sender() {        

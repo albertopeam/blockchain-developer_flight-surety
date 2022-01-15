@@ -47,10 +47,15 @@ let App = {
 
     initBind: async function() {
         // User-submitted transaction
-        DOM.elid('submit-oracle').addEventListener('click', () => {
-            this.contract.fetchFlightStatus(DOM.elid('flight-status-id').value, (error, result) => {
-                display('Oracles', 'Trigger oracles', [ { label: 'Fetch Flight Status', error: error, value: result.flight + ' ' + result.timestamp} ]);
-            });
+        DOM.elid('submit-oracle').addEventListener('click', async () => {
+            let flight = DOM.elid('flight-status-id').value;
+            let response = await this.contract.fetchFlightStatus(flight);
+            if (response.error != null) {                
+                display('Oracles', 'Trigger oracles', [ { label: 'Fetch Flight Status', error: response.error.message, value: flight} ]);
+            } else if (response.result != null) {                
+                display('Oracles', 'Trigger oracles', [ { label: 'Fetch Flight Status', error: response.error, value: response.result.flight + ' ' + response.result.timestamp} ], flight);
+                this.contract.subscribe(response.result.flight, this.flightStatus);
+            }        
         })
 
         // Obtain flights
@@ -118,7 +123,21 @@ let App = {
                 DOM.elid("airlines-ul").appendChild(DOM.li({className:'list-group-item py-0 field-value'}, airline));
             });
         }
-    }        
+    }, 
+    
+    flightStatus: async function(response) {
+        if (response.result != null) {
+            let result = response.result;
+            let flight = result.flight;
+            let date = result.timestamp;
+            let message = `${DOM.elid(flight).textContent} - ${result.status}`
+            DOM.elid(flight).textContent = message;
+        } else if (response.error != null) {
+            let error = response.error;
+            let flight = error.flight;
+            DOM.elid(flight).textContent = `${DOM.elid(flight).textContent} - ${error.message}`;
+        }
+    }
 };
 
 window.onload = async function() {
@@ -129,15 +148,16 @@ window.onload = async function() {
     await App.getFlights();
 };
 
-function display(title, description, results) {
+function display(title, description, results, id = null) {
     let displayDiv = DOM.elid("display-wrapper");
     let section = DOM.section();
     section.appendChild(DOM.h2(title));
-    section.appendChild(DOM.h5(description));
+    section.appendChild(DOM.h5(description));    
     results.map((result) => {
         let row = section.appendChild(DOM.div({className:'row'}));
+        let data = result.error ? String(result.error) : String(result.value)
         row.appendChild(DOM.div({className: 'col-sm-4 field'}, result.label));
-        row.appendChild(DOM.div({className: 'col-sm-8 field-value'}, result.error ? String(result.error) : String(result.value)));
+        row.appendChild(DOM.div({className: 'col-sm-8 field-value', id: `${id ? id : ''}`}, data));
         section.appendChild(row);
     })
     displayDiv.append(section);

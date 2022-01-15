@@ -3,7 +3,7 @@ const truffleAssert = require('truffle-assertions');
 
 contract('Oracles', async (accounts) => {
 
-  const TEST_ORACLES_COUNT = 6;
+  const TEST_ORACLES_COUNT = 20;
   var config;
   before('setup contract', async () => {
     config = await Test.Config(accounts);
@@ -55,11 +55,14 @@ contract('Oracles', async (accounts) => {
       for(let idx=0;idx<3;idx++) {
 
         try {
+          // event
           // Submit a response...it will only be accepted if there is an Index match
-          await config.flightSuretyApp.submitOracleResponse(oracleIndexes[idx], config.firstAirline, flight, timestamp, STATUS_CODE_ON_TIME, { from: accounts[a] });
+          let transaction = await config.flightSuretyApp.submitOracleResponse(oracleIndexes[idx], config.firstAirline, flight, timestamp, STATUS_CODE_ON_TIME, { from: accounts[a] });
+          truffleAssert.eventEmitted(transaction, 'FlightStatusInfo', (event) => {
+            return event.airline === config.firstAirline && event.flight === flight && event.timestamp == timestamp && event.status == STATUS_CODE_ON_TIME;
+          });
 
-        }
-        catch(e) {
+        } catch(e) {
           // Enable this when debugging
            console.log('\nError', idx, oracleIndexes[idx].toNumber(), flight, timestamp);
         }
