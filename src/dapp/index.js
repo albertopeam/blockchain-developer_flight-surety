@@ -70,7 +70,8 @@ let App = {
 
         // Register flight
         DOM.elid('submit-flight').addEventListener('click', async () => {
-            await this.contract.registerFlight(DOM.elid('flight-register-id').value);
+            let response = await this.contract.registerFlight(DOM.elid('flight-register-id').value);
+            display('Register', 'Register flight', [ { label: 'Register flight Status', error: response.error, value: 'successful ' + response.success} ]);
             await this.getFlights();
         })
 
@@ -78,7 +79,8 @@ let App = {
         DOM.elid('submit-purchase-flight-insurance').addEventListener('click', async () => {
             let response = await this.contract.purchaseInsurance(
                 DOM.elid('flight-insurance-id').value, 
-                DOM.elid('flight-insurance-amount').value);
+                DOM.elid('flight-insurance-amount').value
+            );
             display('Purchase', 'Purchase insurance', [ { label: 'Purchase insurance Status', error: response.error, value: 'successful ' + response.success} ]);
         })
 

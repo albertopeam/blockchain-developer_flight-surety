@@ -89,11 +89,16 @@ export default class Contract {
         if (flight == "") {
             return
         }
-        let sender = await this._sender();
-        let timestamp = Date.now();
-        await this.flightSuretyApp.methods
-            .registerFlight(flight, timestamp)
-            .send({from: sender, gas: 4712388, gasPrice: 100000000000});        
+        try {
+            let sender = await this._sender();
+            let timestamp = Date.now();
+            await this.flightSuretyApp.methods
+                .registerFlight(flight, timestamp)
+                .send({from: sender, gas: 4712388, gasPrice: 100000000000}); 
+            return {error: null, success: true}       
+        } catch (error){
+            return {error: error.message, success: false}
+        }
     }
 
     async purchaseInsurance(flight, amount) {
