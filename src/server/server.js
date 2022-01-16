@@ -27,8 +27,7 @@ flightSuretyApp.events.OracleRequest({fromBlock: 'latest' }, function (error, ev
 (async() => {
   const accounts = await web3.eth.getAccounts();
   web3.eth.defaultAccount = accounts[0];
-  console.log(`default account ${web3.eth.defaultAccount}`);
-  console.log(`airline address ${config.firstAirline}`);
+  console.log(`default/airline account ${web3.eth.defaultAccount}`);
   await oracles.registerOracles();
 })();
 

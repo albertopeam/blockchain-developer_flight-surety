@@ -26,16 +26,21 @@ module.exports = class Oracles {
             throw new Error("web3.eth.getAccounts must return at least 20 accounts");
         }
         let fee = await this.flightSuretyApp.methods.REGISTRATION_FEE().call({from: this.web3.eth.defaultAccount});
-        for (let i = 0; i < accounts.length; i++) {
-            try {
-                let account = accounts[i];
-                await this.flightSuretyApp.methods.registerOracle().send({from: account, value: fee, gas: 5000000}); 
+        console.log(`registration fee ${fee}`);        
+        let maxGas = 6721975;
+        console.log(`gas ${maxGas}`);
+        var unregisteredAccounts = [...accounts];        
+        while(unregisteredAccounts.length > 0) {
+            let account = unregisteredAccounts[0];               
+            try {                                                 
+                await this.flightSuretyApp.methods.registerOracle().send({from: account, value: fee, gas: maxGas}); // https://web3js.readthedocs.io/en/v1.2.11/web3-eth-contract.html#methods-mymethod-send
                 let indexes = await this.flightSuretyApp.methods.getMyIndexes().call({from: account});
                 let newOracle = {'address': account, 'indexes': indexes}
-                console.log(`register ${JSON.stringify(newOracle)}`);
+                console.log(`registered oracle ${JSON.stringify(newOracle)}`);
                 this.oracles.push(newOracle);
+                unregisteredAccounts.shift();
             } catch (e) {
-                console.log(`can't register ${accounts[i]}. ${e}`);
+                console.log(`can't register oracle ${account}. ${e}`);
             }            
         }
         console.log(`registered oracles ${this.oracles.length}`);
@@ -47,8 +52,8 @@ module.exports = class Oracles {
         targetOracles = this.oracles.filter(element => element.indexes.includes(index));
         console.log(`numOracles match ${targetOracles.length}`);        
         for (let i=0; i<targetOracles.length ;i++) {
-            //let status = this._randomStatusCode();            
-            let status = 20; //LATE AIRLINE to simplify
+            let status = this._randomStatusCode();            
+            //let status = 20; //to reviewer, use status equals 20 to make fligths delayed
             let oracle = targetOracles[i];
             try {              
                 await this.flightSuretyApp.methods.submitOracleResponse(index, airline, flight, timestamp, status).send({from: oracle.address, gas: 500000});
